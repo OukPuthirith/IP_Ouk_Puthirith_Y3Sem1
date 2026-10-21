@@ -5,10 +5,13 @@ import EventCard from "./EventCard.vue";
 
 const props = defineProps<{ events: CampusEvent[] }>();
 // TODO 1: declare a "book" event (same as EventCard) so the list can pass it up
+const emit = defineEmits<{ book: [event: CampusEvent] }>();
 
 // TODO 2: two refs for the filters
 //   search   -> the text typed in the search box
+const search = ref("");
 //   category -> Category | "all", starts at "all"
+const category = ref<Category | "all">("all");
 
 // TODO 3: a computed `visible` list:
 //   - keep events of the selected category (or all)
