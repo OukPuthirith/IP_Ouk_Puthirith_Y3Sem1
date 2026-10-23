@@ -3,22 +3,53 @@ import { computed, ref, watch } from "vue";
 import EventList from "./components/EventList.vue";
 import { initialEvents } from "./data/events";
 import type { CampusEvent } from "./types";
+import { seatsLeft } from "./format.ts";
 
 // A reactive copy of the hard-coded events
 const events = ref<CampusEvent[]>(initialEvents.map(e => ({ ...e })));
 
 // TODO 1: a ref `myBookings` holding the ids of the events I booked (one entry per seat)
+const myBookings = ref<number[]>([]);
 // TODO 2: a computed `bookingCount`
+const bookingCount = computed(() => myBookings.value.length);
 
 // TODO 3: onBook(id): find the event; if it still has a seat,
 //         increase its `booked` and add the id to myBookings
 function onBook(id: number) {
-  console.log("book", id);
+  const event = events.value.find((e) => e.id === id);
+  if (event && seatsLeft(event) > 0) {
+    event.booked++;
+    myBookings.value.push(id);
+  }
 }
 
 // TODO 4 (bonus): keep my bookings after a page reload
 //   - watch myBookings and save it to localStorage (JSON.stringify)
 //   - read it back when the app starts, and add those seats to `booked`
+const STORAGE_KEY = "myBookings";
+
+// read back at startup
+try {
+  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+  if (Array.isArray(saved)) {
+    for (const id of saved) {
+      const event = events.value.find((e) => e.id === id);
+      if (event && seatsLeft(event) > 0) {
+        event.booked++;
+        myBookings.value.push(id);
+      }
+    }
+  }
+} catch {
+  // stored text was not valid JSON: start with no bookings
+}
+
+// save on every change
+watch(
+  myBookings,
+  (ids) => localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)),
+  { deep: true },
+);
 </script>
 
 <template>
@@ -26,7 +57,9 @@ function onBook(id: number) {
     <header>
       <h1>Campus Events</h1>
       <!-- TODO 5: show the real count ("1 seat" / "N seats") -->
-      <p class="mine">You have booked 0 seats.</p>
+      <p class="mine">
+        You have booked {{ bookingCount === 1 ? "1 seat" : `${bookingCount} seats` }}.
+      </p>
     </header>
     <EventList :events="events" @book="onBook" />
   </main>
